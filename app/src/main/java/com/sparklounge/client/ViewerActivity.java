@@ -14,13 +14,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.InputStream;
@@ -88,20 +86,28 @@ public class ViewerActivity extends ActionBarActivity {
     public void dislikeImage(View view){
         likeButton.setEnabled(false);
         dislikeButton.setEnabled(false);
-        String currentItem = MainMenuActivity.queue.get(0);
-        MainMenuActivity.queue.remove(currentItem);
-        MainMenuActivity.memoryCache.remove(currentItem);
-        new PushItemRequestTask().execute(currentItem, "0");
+        String currentImageString = MainMenuActivity.queue.get(0);
+        MainMenuActivity.queue.remove(currentImageString);
+        MainMenuActivity.memoryCache.remove(currentImageString);
+        if (currentImageString.startsWith("item/")) {
+            new PushItemRequestTask().execute(currentImageString, "0");
+        } else if (currentImageString.startsWith("matched/")){
+            new PushMatchedRequestTask().execute(currentImageString, "0");
+        }
         new GetAndShowNextImage().execute();
         checkAndUpdateQueueAndCache();
     }
     public void likeImage(View view){
         likeButton.setEnabled(false);
         dislikeButton.setEnabled(false);
-        String currentItem = MainMenuActivity.queue.get(0);
-        MainMenuActivity.queue.remove(currentItem);
-        MainMenuActivity.memoryCache.remove(currentItem);
-        new PushItemRequestTask().execute(currentItem, "1");
+        String currentImageString = MainMenuActivity.queue.get(0);
+        MainMenuActivity.queue.remove(currentImageString);
+        MainMenuActivity.memoryCache.remove(currentImageString);
+        if (currentImageString.startsWith("item/")) {
+            new PushItemRequestTask().execute(currentImageString, "1");
+        } else if (currentImageString.startsWith("matched/")){
+            new PushMatchedRequestTask().execute(currentImageString, "1");
+        }
         new GetAndShowNextImage().execute();
         checkAndUpdateQueueAndCache();
     }
@@ -120,25 +126,36 @@ public class ViewerActivity extends ActionBarActivity {
                 }
 
                     String nextItem = MainMenuActivity.queue.get(0);
-                    Bitmap tryGetBitmap = MainMenuActivity.memoryCache.get(nextItem);
 
-                    if (tryGetBitmap == null) {
-                        try {
-                            InputStream inputStream = null;
-                            if (nextItem.contains("/")) {
-                                inputStream = MainMenuActivity.s3Client.getAmazonS3Client().getObject(MainMenuActivity.resources.getString(R.string.s3_upload_bucket_name), nextItem).getObjectContent();
-                            } else {
-                                inputStream = MainMenuActivity.s3Client.getAmazonS3Client().getObject(MainMenuActivity.resources.getString(R.string.s3_bucket_name), nextItem).getObjectContent();
+                        Bitmap tryGetBitmap = MainMenuActivity.memoryCache.get(nextItem);
+
+                        if (tryGetBitmap == null) {
+                            try {
+                                InputStream inputStream = null;
+
+                                if (nextItem.startsWith("item/")) {
+                                    nextItem = nextItem.substring(nextItem.indexOf("/") + 1);
+                                    if (nextItem.contains("/")) {
+                                        inputStream = MainMenuActivity.s3Client.getAmazonS3Client().getObject(MainMenuActivity.resources.getString(R.string.s3_upload_bucket_name), nextItem).getObjectContent();
+                                    } else {
+                                        inputStream = MainMenuActivity.s3Client.getAmazonS3Client().getObject(MainMenuActivity.resources.getString(R.string.s3_bucket_name), nextItem).getObjectContent();
+                                    }
+                                } else if (nextItem.startsWith("matched/")){
+                                    nextItem = nextItem.substring(nextItem.indexOf("/") + 1);
+                                    inputStream = MainMenuActivity.s3Client.getAmazonS3Client().getObject(MainMenuActivity.resources.getString(R.string.s3_profile_bucket_name), nextItem + "/profilepic.jpg").getObjectContent();
+                                }
+
+                                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);//                        bitmap = BitmapFactory.decodeFile(imageFile.getPath());
+                                setImageView(bitmap);
+                            } catch (Exception e) {
+                                Log.e("ViewerActivity", e.getMessage(), e);
+                                return "failure";
                             }
-                            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);//                        bitmap = BitmapFactory.decodeFile(imageFile.getPath());
-                            setImageView(bitmap);
-                        } catch (Exception e) {
-                            Log.e("ViewerActivity", e.getMessage(), e);
-                            return "failure";
+                        } else {
+                            setImageView(tryGetBitmap);
                         }
-                    } else {
-                        setImageView(tryGetBitmap);
-                    }
+
+
 
 
             } catch (Exception e){
@@ -164,16 +181,37 @@ public class ViewerActivity extends ActionBarActivity {
         @Override
         protected String doInBackground(String... params) {
             try {
-                final String pushItemUrl = getResources().getString(R.string.base_api_url) + "/pushitem";
+                final String pushItemUrl = getResources().getString(R.string.base_api_url) + "/app/pushitem";
                 RestTemplate restTemplate = new RestTemplate();
-                MappingJackson2HttpMessageConverter jsonToPojo = new MappingJackson2HttpMessageConverter();
-                jsonToPojo.getObjectMapper().setPropertyNamingStrategy(
-                        PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-                restTemplate.getMessageConverters().add(jsonToPojo);
+                restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
                 String accessToken = prefs.getString("access_token", null);
                 HttpHeaders headers = new HttpHeaders();
                 headers.add("Authorization", "Bearer " + accessToken);
                 headers.add("Item", params[0]);
+                headers.add("Like", params[1]);
+                HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
+                ResponseEntity<String> responseEntity;
+                responseEntity = restTemplate.exchange(pushItemUrl, HttpMethod.GET, httpEntity, String.class);
+                String response = responseEntity.getBody();
+                return response;
+            } catch (Exception e) {
+                Log.e("ViewerActivity", e.getMessage(), e);
+            }
+            return null;
+        }
+    }
+
+    class PushMatchedRequestTask extends AsyncTask<String, String, String>{
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                final String pushItemUrl = getResources().getString(R.string.base_api_url) + "/app/pushmatched";
+                RestTemplate restTemplate = new RestTemplate();
+                restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
+                String accessToken = prefs.getString("access_token", null);
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Authorization", "Bearer " + accessToken);
+                headers.add("Matched", params[0]);
                 headers.add("Like", params[1]);
                 HttpEntity<String> httpEntity = new HttpEntity<String>(headers);
                 ResponseEntity<String> responseEntity;

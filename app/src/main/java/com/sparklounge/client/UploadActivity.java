@@ -1,11 +1,16 @@
 package com.sparklounge.client;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
@@ -27,15 +32,20 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 
 public class UploadActivity extends ActionBarActivity {
     private static int RESULT_LOAD_IMG = 1;
+    private static int RESULT_CROP_IMG = 2;
     private SharedPreferences prefs;
+    File croppedFile;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_upload);
+        croppedFile = null;
     }
 
 
@@ -75,7 +85,7 @@ public class UploadActivity extends ActionBarActivity {
 
     public void uploadFile(View view){
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, 1);
+        startActivityForResult(intent, RESULT_LOAD_IMG);
     }
 
     @Override
@@ -84,14 +94,111 @@ public class UploadActivity extends ActionBarActivity {
         try {
             if (requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK && data != null){
                 Uri selectedImage = data.getData();
-                String [] filePathColumn = { MediaStore.Images.Media.DATA};
 
-                Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
 
-                cursor.moveToFirst();
-                int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                String imagePath = cursor.getString(columnIndex);
-                new uploadFile(imagePath).execute();
+                try {
+
+                Intent cropIntent = new Intent("com.android.camera.action.CROP");
+                // indicate image type and Uri
+                cropIntent.setDataAndType(selectedImage, "image/*");
+                // set crop properties
+                cropIntent.putExtra("scaleType", "centerCrop");
+                cropIntent.putExtra("crop", "true");
+                // indicate aspect of desired crop
+                cropIntent.putExtra("aspectX", 1);
+                cropIntent.putExtra("aspectY", 1);
+                // indicate output X and Y
+//                cropIntent.putExtra("outputX", 960);
+//                cropIntent.putExtra("outputY", 1200);
+                // retrieve data on return
+//                cropIntent.putExtra("return-data", true);
+//                cropIntent.putExtra("outputFormat",Bitmap.CompressFormat.JPEG.toString());
+                    if (croppedFile != null){
+                        croppedFile.delete();
+                    }
+                    croppedFile = new File(Environment.getExternalStorageDirectory(),
+                            "/Spark" + System.currentTimeMillis() + ".jpg");
+                    try {
+                        croppedFile.createNewFile();
+                    } catch (IOException ex) {
+                        Log.e("io", ex.getMessage());
+                    }
+
+                    Uri croppedFileUri = Uri.fromFile(croppedFile);
+
+                    cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, croppedFileUri);
+                // start the activity - we handle returning in onActivityResult
+                startActivityForResult(cropIntent, RESULT_CROP_IMG);
+                } catch (ActivityNotFoundException anfe) {
+                    // respond to users whose devices do not support the crop action
+                    // display an error message
+                    String errorMessage = "Whoops - your device doesn't support the crop action!";
+                    Toast toast = Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT);
+                    toast.show();
+
+                    String [] filePathColumn = { MediaStore.Images.Media.DATA};
+
+                    Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
+
+                    cursor.moveToFirst();
+                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                    String imagePath = cursor.getString(columnIndex);
+
+                    new uploadFile(imagePath, false).execute();
+                }
+            }
+            else if (requestCode == RESULT_CROP_IMG && resultCode == RESULT_OK && data != null){
+
+                if (croppedFile != null){
+                    FileOutputStream fos = null;
+                    try {
+                        File compressedFile = new File(Environment.getExternalStorageDirectory(),
+                                "/SparkCompressed" + System.currentTimeMillis() + ".jpg");
+//                        try {
+//                            compressedFile.createNewFile();
+//                        } catch (IOException ex) {
+//                            Log.e("io", ex.getMessage());
+//                        }
+                        fos = new FileOutputStream(compressedFile);
+                        Bitmap bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(croppedFile.getPath()), 960, 960);
+                        //Bitmap bitmap = BitmapFactory.decodeFile(croppedFile.getPath());
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+                        fos.flush();
+                        fos.close();
+                        Log.e("UploadActivity", "Original Size: " + String.valueOf(croppedFile.length()));
+                        Log.e("UploadActivity", "Compressed Size: " + String.valueOf(compressedFile.length()));
+                        new uploadFile(compressedFile.getPath(), true).execute();
+                        //                        // get the cropped bitmap
+                        //                        Bitmap selectedBitmap = extras.getParcelable("data");
+                        //
+                        //                        File file = null;
+                        //                        FileOutputStream fOut = null;
+                        //                        try {
+                        //                            String path = Environment.getExternalStorageDirectory().toString();
+                        //
+                        //                            file = new File();
+                        //                            fOut = new FileOutputStream(file);
+                        //                            selectedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+                        //                            fOut.flush();
+                        //                            fOut.close();
+                        //                            String imagePath = file.getPath();
+                        //                            new uploadProfilePicture(imagePath, true).execute();
+                        //                        } catch (Exception e){
+                        //                            Log.e("UploadActivity", e.getMessage(), e);
+                        //                        } finally {
+                        //                            if (fOut != null){
+                        //                                fOut.close();
+                        //                            }
+                        //                        }
+
+                    } finally {
+                            if (croppedFile != null){
+                                croppedFile.delete();
+                            } if (fos != null) {
+                            fos.close();
+                            }
+                    }
+                }
             }
         } catch (Exception e){
             Log.e("UploadActivity", e.getMessage(), e);
@@ -99,23 +206,30 @@ public class UploadActivity extends ActionBarActivity {
     }
 
     private class uploadFile extends AsyncTask<String, String, String>{
-        private String path;
+        private File file;
+        private boolean tempFile;
 
-        public uploadFile(String path){
-            this.path = path;
+        public uploadFile(String path, boolean tempFile){
+            this.file = new File(path);
+            this.tempFile = tempFile;
         }
 
         @Override
         protected String doInBackground(String... args) {
-            if (path != null && !path.isEmpty()) {
+            if (file != null) {
                 String accessToken = prefs.getString("access_token", null);
                 try {
-                    final String getUploadFolderUrl = getResources().getString(R.string.base_api_url) + "/uploaditem";
+                    final String getUploadFolderUrl = getResources().getString(R.string.base_api_url) + "/app/uploaditem";
                     RestTemplate restTemplate = new RestTemplate();
                     restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
                     restTemplate.getMessageConverters().add(new FormHttpMessageConverter());
                     LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
-                    map.add("file", new FileSystemResource(new File(path)));
+                    FileSystemResource fsr = new FileSystemResource(this.file);
+//                    Bitmap uploadBitmap = BitmapFactory.decodeFile(path);
+//                    ByteArrayOutputStream byteArrOutput = new ByteArrayOutputStream();
+//                    uploadBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrOutput);
+//                    byte[] byteArr = byteArrOutput.toByteArray();
+                    map.add("file", fsr);
 //                    map.add("Content-Type", path.substring(path.lastIndexOf(".")));
                     HttpHeaders headers = new HttpHeaders();
                     headers.add("Authorization", "Bearer " + accessToken);
@@ -131,6 +245,12 @@ public class UploadActivity extends ActionBarActivity {
                 } catch (Exception e) {
                     Log.e("UploadActivity", e.getMessage(), e);
                     return null;
+                } finally {
+                    if (tempFile == true){
+                        if (file != null) {
+                            this.file.delete();
+                        }
+                    }
                 }
 //
 //                if (uploadFolder == null) {

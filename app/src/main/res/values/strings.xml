@@ -21,6 +21,7 @@
     <string name="s3_credentials_duration">7200000</string>
     <string name="s3_bucket_name">com.spark</string>
     <string name="s3_upload_bucket_name">com.spark.userupload</string>
+    <string name="s3_profile_bucket_name">com.spark.userprofile</string>
     <!--gcm-->
     <string name="gcm_app_sender_id">51034816021</string>
     <string name="gcm_send_message">Token retrieved and sent to server! You can now use gcmsender to

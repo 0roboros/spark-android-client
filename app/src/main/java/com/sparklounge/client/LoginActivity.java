@@ -17,7 +17,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.facebook.appevents.AppEventsLogger;
-import com.facebook.login.widget.LoginButton;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -212,7 +211,7 @@ public class LoginActivity extends ActionBarActivity implements
         @Override
         protected String doInBackground(Void... params){
             try{
-                final String tokenUrl = getResources().getString(R.string.base_api_url) + "/refreshtoken";
+                final String tokenUrl = getResources().getString(R.string.base_api_url) + "/app/refreshtoken";
                 RestTemplate restTemplate = new RestTemplate();
                 MappingJackson2HttpMessageConverter jsonToPojo = new MappingJackson2HttpMessageConverter();
                 jsonToPojo.getObjectMapper().setPropertyNamingStrategy(
