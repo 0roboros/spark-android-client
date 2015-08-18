@@ -154,14 +154,8 @@ public class UploadActivity extends ActionBarActivity {
                     try {
                         File compressedFile = new File(Environment.getExternalStorageDirectory(),
                                 "/SparkCompressed" + System.currentTimeMillis() + ".jpg");
-//                        try {
-//                            compressedFile.createNewFile();
-//                        } catch (IOException ex) {
-//                            Log.e("io", ex.getMessage());
-//                        }
                         fos = new FileOutputStream(compressedFile);
                         Bitmap bitmap = ThumbnailUtils.extractThumbnail(BitmapFactory.decodeFile(croppedFile.getPath()), 960, 960);
-                        //Bitmap bitmap = BitmapFactory.decodeFile(croppedFile.getPath());
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
                         fos.flush();
                         fos.close();
