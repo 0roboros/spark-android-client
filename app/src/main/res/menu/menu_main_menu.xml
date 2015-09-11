@@ -2,6 +2,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.sparklounge.client.MainMenuActivity">
+
+    <item android:id="@+id/action_take_photo"
+        android:title="Take photo"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/action_upload_photo"
+        android:title="Upload photo"
+        app:showAsAction="ifRoom"/>
+
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
 </menu>

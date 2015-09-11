@@ -1,4 +1,4 @@
-package com.sparklounge.client;
+package com.sparklounge.client.models;
 
 /**
  * Created by James on 2015-07-17.
@@ -10,7 +10,8 @@ public class AwsCredentials {
     private String sessionToken;
     private Long expiration;
 
-    public AwsCredentials(){}
+    private AwsCredentials(){}
+
     public AwsCredentials(String accessKeyId, String secretAccessKey, String sessionToken, Long expiration){
         this.accessKeyId = accessKeyId;
         this.secretAccessKey = secretAccessKey;

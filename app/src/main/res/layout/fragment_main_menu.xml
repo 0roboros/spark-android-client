@@ -50,4 +50,16 @@
         android:onClick="logoutRequest"
         />
 
+    <Button
+        android:id="@+id/newImageView"
+        android:text="New Image View"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/submit_logout"
+        android:layout_marginTop="75dp"
+        android:layout_marginBottom="75dp"
+        android:layout_centerHorizontal="true"
+        android:onClick="startNewView"
+        />
+
 </RelativeLayout>

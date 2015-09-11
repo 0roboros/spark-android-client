@@ -117,10 +117,10 @@ public class LoginActivityFragment extends Fragment {
         return view;
     }
 
-    class validateFbTask extends AsyncTask<Void, Void, com.sparklounge.client.AccessToken>{
+    class validateFbTask extends AsyncTask<Void, Void, com.sparklounge.client.models.AccessToken>{
 
         @Override
-        protected com.sparklounge.client.AccessToken doInBackground(Void... params){
+        protected com.sparklounge.client.models.AccessToken doInBackground(Void... params){
             try {
                 final String signUpUrl = getResources().getString(R.string.base_api_url) + "/signupfb";
                 final String logInUrl = getResources().getString(R.string.base_api_url) + "/logintokenfb";
@@ -142,9 +142,9 @@ public class LoginActivityFragment extends Fragment {
                     return null;
                 }
 
-                ResponseEntity<com.sparklounge.client.AccessToken> responseEntity2;
-                responseEntity2 = restTemplate.exchange(logInUrl, HttpMethod.GET, httpEntity, com.sparklounge.client.AccessToken.class);
-                com.sparklounge.client.AccessToken accessToken = responseEntity2.getBody();
+                ResponseEntity<com.sparklounge.client.models.AccessToken> responseEntity2;
+                responseEntity2 = restTemplate.exchange(logInUrl, HttpMethod.GET, httpEntity, com.sparklounge.client.models.AccessToken.class);
+                com.sparklounge.client.models.AccessToken accessToken = responseEntity2.getBody();
                 return accessToken;
 
             } catch (Exception e){
@@ -155,7 +155,7 @@ public class LoginActivityFragment extends Fragment {
         }
 
         @Override
-        protected void onPostExecute(com.sparklounge.client.AccessToken accessToken){
+        protected void onPostExecute(com.sparklounge.client.models.AccessToken accessToken){
             if (accessToken == null) {
                 TextView failedRequest = (TextView) getActivity().findViewById(R.id.failed_request);
                 failedRequest.setText(getResources().getString(R.string.failed_login));

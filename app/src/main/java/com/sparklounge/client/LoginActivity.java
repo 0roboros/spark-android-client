@@ -25,6 +25,7 @@ import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.location.LocationServices;
+import com.sparklounge.client.models.AccessToken;
 
 import org.springframework.http.HttpBasicAuthentication;
 import org.springframework.http.HttpEntity;

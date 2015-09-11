@@ -1,4 +1,4 @@
-package com.sparklounge.client;
+package com.sparklounge.client.activities;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -20,6 +20,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.sparklounge.client.R;
+import com.sparklounge.client.apis.SparkApi;
+
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -34,6 +37,13 @@ import org.springframework.web.client.RestTemplate;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import retrofit.Callback;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
+import retrofit.mime.TypedFile;
 
 
 public class UploadActivity extends ActionBarActivity {
@@ -41,11 +51,18 @@ public class UploadActivity extends ActionBarActivity {
     private static int RESULT_CROP_IMG = 2;
     private SharedPreferences prefs;
     File croppedFile;
+    private SparkApi mSparkApi;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_upload);
         croppedFile = null;
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            String accessTokenString = extras.getString("access_token");
+            mSparkApi = new SparkApi(accessTokenString);
+        }
     }
 
 
@@ -167,7 +184,14 @@ public class UploadActivity extends ActionBarActivity {
                         fos.close();
                         Log.e("UploadActivity", "Original Size: " + String.valueOf(croppedFile.length()));
                         Log.e("UploadActivity", "Compressed Size: " + String.valueOf(compressedFile.length()));
-                        new uploadFile(compressedFile.getPath(), true).execute();
+
+
+                        //new uploadFile(compressedFile.getPath(), true).execute();
+
+                        Map<String, TypedFile> files = new HashMap<>();
+                        files.put("file", new TypedFile("image/jpg", compressedFile));
+                        uploadFile(files);
+
                         //                        // get the cropped bitmap
                         //                        Bitmap selectedBitmap = extras.getParcelable("data");
                         //
@@ -305,6 +329,26 @@ public class UploadActivity extends ActionBarActivity {
                 });
             }
         }
+    }
+
+
+    private void uploadFile(Map<String, TypedFile> files) {
+        mSparkApi.uploadItem(files, new Callback<String>() {
+            @Override
+            public void success(String s, Response response) {
+                if(s.equals("success")) {
+                    Toast.makeText(getApplicationContext(), "Successfully Uploaded", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Failed to Upload", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                Toast.makeText(getApplicationContext(), "Failed to Upload", Toast.LENGTH_SHORT).show();
+                error.printStackTrace();
+            }
+        });
     }
 
 
