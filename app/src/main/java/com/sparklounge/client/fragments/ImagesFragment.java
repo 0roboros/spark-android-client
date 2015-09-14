@@ -23,8 +23,6 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.sparklounge.client.MainMenuActivity;
 import com.sparklounge.client.R;
 import com.sparklounge.client.SparkApplication;
 import com.sparklounge.client.activities.ImagesActivity;
@@ -35,12 +33,9 @@ import com.sparklounge.client.interfaces.OnItemClickListener;
 import com.sparklounge.client.models.AwsCredentials;
 import com.sparklounge.client.models.Image;
 import com.sparklounge.client.models.ImageList;
-import com.sparklounge.client.models.UserInfo;
 import com.sparklounge.client.views.EndlessRecyclerOnScrollListener;
 import com.sparklounge.client.views.ImageAdapter;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -334,6 +329,7 @@ public class ImagesFragment extends Fragment {
                     bitmap = s3Client.getBitmap(imageLink);
                     SparkApplication.getCache().put(imageLink, bitmap);
                 }
+                Log.e("", "***********The bitmap is :" + bitmap.getByteCount() / 1024 + "***********");
                 Image img = new Image();
                 img.setUri(imageLink);
                 return img;

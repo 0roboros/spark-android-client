@@ -31,7 +31,6 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import com.sparklounge.client.fragments.FriendsFragment;
 import com.sparklounge.client.fragments.MessagesFragment;
-import com.sparklounge.client.models.AwsCredentials;
 import com.sparklounge.client.R;
 import com.sparklounge.client.apis.AmazonClient;
 import com.sparklounge.client.apis.SparkApi;
@@ -60,9 +59,6 @@ public class ImagesActivity extends ActionBarActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_images);
-
-        prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
         initActionBar();
 
     }
@@ -70,9 +66,7 @@ public class ImagesActivity extends ActionBarActivity implements
     @Override
     protected void onResume(){
         super.onResume();
-        if (prefs == null){
-            prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        }
+        prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         validateSparkClient();
     }
 
@@ -188,7 +182,8 @@ public class ImagesActivity extends ActionBarActivity implements
                 public void success(String responseString, Response response) {
                     if (responseString == null) {
                         Log.d("", "refresh token not successful;");
-                        showLogin();
+                        //showLogin();
+                        resumeFragments();
                     } else {
                         Log.d("", "Logged in with refresh token");
                         resumeFragments();

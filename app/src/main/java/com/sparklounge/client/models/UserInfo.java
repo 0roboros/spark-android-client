@@ -23,7 +23,6 @@ public class UserInfo implements Serializable {
         return this.userId;
     }
 
-    // TODO: remove
     public String getCaption() {
         return this.caption;
     }
